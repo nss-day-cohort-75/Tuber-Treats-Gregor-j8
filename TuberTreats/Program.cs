@@ -33,7 +33,7 @@ List<TuberDriver> drivers = new List<TuberDriver>
                 OrderPlacedOnDate = new DateTime(2025, 4, 20, 14, 15, 0),
                 DeliveredOnDate = new DateTime(2025, 4, 20, 14, 45, 0),
                 CustomerId = 1,
-                TuberDriverId = 1,
+                TuberDriverId = 3,
             },
             new TuberOrder
             {
@@ -41,7 +41,7 @@ List<TuberDriver> drivers = new List<TuberDriver>
                 OrderPlacedOnDate = new DateTime(2025, 4, 21, 10, 30, 0),
                 DeliveredOnDate = new DateTime(2025, 4, 21, 11, 0, 0),
                 CustomerId = 2,
-                TuberDriverId = 2,
+                TuberDriverId = 1,
             },
             new TuberOrder
             {
@@ -49,7 +49,7 @@ List<TuberDriver> drivers = new List<TuberDriver>
                 OrderPlacedOnDate = new DateTime(2025, 4, 19, 18, 0, 0),
                 DeliveredOnDate = new DateTime(2025, 4, 19, 18, 25, 0),
                 CustomerId = 3,
-                TuberDriverId = null,
+                TuberDriverId = 2,
             },
  };
 
@@ -83,7 +83,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.MapGet("/getorders", () => 
+app.MapGet("/orders", () => 
 {
     return orders.Select(o => 
     {
@@ -104,7 +104,7 @@ app.MapGet("/getorders", () =>
     });
 });
 
-app.MapGet("/getordersbyid", (int id) => 
+app.MapGet("/ordersbyid", (int id) => 
 {
 
         TuberOrder order = orders.FirstOrDefault(t => t.Id == id);
@@ -248,6 +248,125 @@ app.MapDelete("/toppingdelete/{id}", (int id) => {
 
     tuberToppings.Remove(topping);
     return Results.NoContent();
+});
+
+app.MapGet("/customer", () =>  {
+    return customers.Select(c => 
+    {
+        TuberOrder order = orders.FirstOrDefault(t => t.CustomerId == c.Id);
+        if(order == null) return null;
+        List<TuberTopping> tt = tuberToppings.Where(t => t.TuberOrderId == order.Id).ToList();
+        List<Topping> topping = tt.Select(o => toppings.FirstOrDefault(topping => o.ToppingId == topping.Id)).ToList();
+
+        return new CustomerDTO {
+            Id = c.Id,
+            Name = c.Name,
+            Address = c.Address,
+            TuberOrder = new TuberOrderDTO 
+            {
+                Id = order.Id,
+                OrderPlacedOnDate = order.OrderPlacedOnDate,
+                CustomerId = order.CustomerId,
+                TuberDriverId = order.TuberDriverId,
+                DeliveredOnDate = order.DeliveredOnDate,
+                Toppings = topping.Select(t => new ToppingsDTO 
+            {
+                Id = t.Id,
+                Name = t.Name
+            }).ToList()
+            }
+        };
+    });
+});
+
+app.MapGet("/customerid", (int id) =>  {
+        Customer c = customers.FirstOrDefault(c => c.Id == id);
+        TuberOrder order = orders.FirstOrDefault(t => t.CustomerId == c.Id);
+        if(order == null) return null;
+        List<TuberTopping> tt = tuberToppings.Where(t => t.TuberOrderId == order.Id).ToList();
+        List<Topping> topping = tt.Select(o => toppings.FirstOrDefault(topping => o.ToppingId == topping.Id)).ToList();
+
+        return new CustomerDTO {
+            Id = c.Id,
+            Name = c.Name,
+            Address = c.Address,
+            TuberOrder = new TuberOrderDTO 
+            {
+                Id = order.Id,
+                OrderPlacedOnDate = order.OrderPlacedOnDate,
+                CustomerId = order.CustomerId,
+                TuberDriverId = order.TuberDriverId,
+                DeliveredOnDate = order.DeliveredOnDate,
+                Toppings = topping.Select(t => new ToppingsDTO 
+            {
+                Id = t.Id,
+                Name = t.Name
+            }).ToList()
+            }
+        };
+    });
+
+app.MapPost("/newcustomer", (Customer customer) => {
+
+
+    customer.Id = customers.Max(d => d.Id) + 1;
+    customers.Add(customer);
+
+
+    return Results.Created($"/order/{customer.Id}", new CustomerDTO
+    {
+        Id = customer.Id,
+        Name = customer.Name,
+        Address = customer.Address,
+    });
+});
+
+app.MapDelete("/customer/{id}", (int id) => {
+        Customer customer = customers.FirstOrDefault(customer => customer.Id == id);
+
+        if (customer == null)
+    {
+        return Results.NotFound();
+    }
+
+    customers.Remove(customer);
+    return Results.NoContent();
+});
+
+app.MapGet("/tuberdriver", () => 
+{
+    return drivers.Select(t => 
+    {
+        TuberOrder order = orders.FirstOrDefault(o => o.TuberDriverId == t.Id);
+        return new TuberDriverDTO {
+            Id = t.Id,
+            Name = t.Name,
+            TuberDeliveries = new TuberOrderDTO {
+                Id = order.Id,
+                OrderPlacedOnDate = order.OrderPlacedOnDate,
+                DeliveredOnDate = order.DeliveredOnDate,
+                CustomerId =  order.CustomerId,
+                TuberDriverId = order.TuberDriverId
+            }
+        };
+    });
+});
+
+app.MapGet("/driversbydeliveries", (int id) => 
+{
+        TuberOrder order = orders.FirstOrDefault(t => t.TuberDriverId == id);
+        TuberDriver driver = drivers.FirstOrDefault(d => d.Id == order.TuberDriverId);
+        return new TuberDriverDTO {
+            Id = driver.Id,
+            Name = driver.Name,
+            TuberDeliveries = new TuberOrderDTO {
+                Id = order.Id,
+                OrderPlacedOnDate = order.OrderPlacedOnDate,
+                DeliveredOnDate = order.DeliveredOnDate,
+                CustomerId =  order.CustomerId,
+                TuberDriverId = order.TuberDriverId
+            }
+        }; 
 });
 
 app.Run();

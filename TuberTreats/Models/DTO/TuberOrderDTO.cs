@@ -1,3 +1,4 @@
+#nullable enable
 namespace TuberTreats.Models.DTO;
 
 public class TuberOrderDTO {
@@ -6,6 +7,6 @@ public class TuberOrderDTO {
     public int CustomerId { get; set; }
     public int? TuberDriverId  { get; set; }
     public DateTime DeliveredOnDate  { get; set; }
-    public List<ToppingsDTO> Toppings { get; set; }
+    public List<ToppingsDTO>? Toppings { get; set; }
     public  Boolean? IsCompleted { get; set; }
 }
